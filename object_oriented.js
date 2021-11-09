@@ -302,7 +302,7 @@ for(var i = 0; i<temp_mir.length; i++) {
 }
 
 // [x-cord, y-cord, angle in degrees, quadrant] // [750, 0, 330, 0]
-var temp_ray = [[600, 500, 50,0]];
+var temp_ray = [[600, 500, 50, 0]];
 var rays = [];
 for(var i = 0; i < temp_ray.length; i++) {
   rays[i] = new Ray(temp_ray[i][0], temp_ray[i][1], temp_ray[i][2]);
