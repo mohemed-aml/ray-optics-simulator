@@ -28,7 +28,7 @@ class Mirror {
     }
     drawMirror() {
         c.beginPath();
-        c.lineWidth = 3;
+        c.lineWidth = 5;
         c.moveTo(this.x1, this.y1);
         c.lineTo(this.x2, this.y2);
         c.strokeStyle = "yellow";
@@ -45,9 +45,10 @@ class Mirror {
 }
 
 class Ray {
-    constructor(x_cord, y_cord, angle) {
+    constructor(x_cord, y_cord, angle, colour) {
         this.x = x_cord;
         this.y = y_cord;
+        this.color = colour;
         this.new_x;
         this.new_y;
         this.angle_deg = angle % 360;
@@ -61,7 +62,6 @@ class Ray {
         this.findSlope();
         this.checkVertHorz();
         this.findQuadrant();
-
     }
     findAngRad() {
         this.angle_rad = (this.angle_deg/180) * Math.PI;
@@ -278,7 +278,7 @@ class Ray {
     }
 
     findNewAngle(ray_angle, quad, mir_angle) {
-        if(mir_angle < 0) {
+        if(mir_angle <= 0) {
             mir_angle += Math.PI;
         }
         if(quad == 3 || quad == 4) {
@@ -293,7 +293,8 @@ class Ray {
 }
 
 // [x1-cord, y1-cord, x2-cord, y2-cord] ["reflective", 1050, 100, 1050, 400]
-var temp_mir = [["reflective", 700, 350, 700, 450], ["reflective", 400, 150, 600, 150], ["reflective", 425, 175, 475, 225]];
+// var temp_mir = [["reflective", 700, 350, 700, 450], ["reflective", 400, 150, 600, 150], ["reflective", 275, 275, 350, 350]];
+var temp_mir = [["reflective", 1050, 550, 1050, 350], ["reflective", 950, 250, 750, 250], ["reflective", 650, 350, 650, 550], ["reflective", 750, 650, 950, 650]]
 var elements = []; // List of Objects
 for(var i = 0; i<temp_mir.length; i++) {
     if(temp_mir[i][0] == "reflective") {
@@ -302,10 +303,11 @@ for(var i = 0; i<temp_mir.length; i++) {
 }
 
 // [x-cord, y-cord, angle in degrees, quadrant] // [750, 0, 330, 0]
-var temp_ray = [[600, 500, 50, 0]];
+// var temp_ray = [[600, 500, 45, 0]];
+var temp_ray = [[800, 300, 45, "red"], [900, 300, 135, "blue"]];
 var rays = [];
 for(var i = 0; i < temp_ray.length; i++) {
-  rays[i] = new Ray(temp_ray[i][0], temp_ray[i][1], temp_ray[i][2]);
+  rays[i] = new Ray(temp_ray[i][0], temp_ray[i][1], temp_ray[i][2], temp_ray[i][3]);
 }
 
 function drawElements(rays, elements) {
@@ -335,58 +337,64 @@ function drawElements(rays, elements) {
         var current_ray = new Ray(rays[i].x, rays[i].y, rays[i].angle_deg);
         var new_ray = new Ray(rays[i].x, rays[i].y, rays[i].angle_deg);
         var count = 1
+        console.log(JSON.stringify(rays[i], null, 4))
 
-        while(flag_canvas_interract == false && count < 10) {
-            console.log("1", current_ray, new_ray);
+        while(flag_canvas_interract == false && count < 500) {
 
             var flag_interact = false;
-            current_ray.closest_dist = 4000;
             var interacting_element;
 
             for(var j = 0; j < elements.length; j++) {
+                // console.log("i = ", i, "j = ", j, "\nCurrent: ", JSON.stringify(current_ray, null, 4), "\nNew: ", JSON.stringify(new_ray, null, 4), "\nElement: ", JSON.stringify(elements[j], null, 4));
                 if (current_ray.checkRayEqn(elements[j]) == false) {
-                    console.log("checkRayEqn Failed by current ray", current_ray, "for element", elements[j]);
+                    // console.log("checkRayEqn Failed by current ray", JSON.stringify(current_ray, null, 4), "for element", JSON.stringify(elements[j], null, 4));
                     continue;
                 }
 
                 current_ray.findCoordinates(elements[j]);
-                console.log("Current Ray Coordinates", current_ray);
+                // console.log("Current Ray Coordinates", JSON.stringify(current_ray, null, 4));
 
                 if(current_ray.checkCoordinates() == false) {
-                    console.log("checkCoordinates Failed by current ray", current_ray, "for element", elements[j]);
+                    // console.log("checkCoordinates Failed by current ray", current_ray, "for element", elements[j]);
                     continue;
                 }
+
                 if(current_ray.checkDistance()) {
                     new_ray.x = current_ray.new_x;
                     new_ray.y = current_ray.new_y;
                     interacting_element = elements[j];
                     flag_interact = true;
                 }
+                else {
+                    // console.log("Check Distance Failed");
+                }
             }
 
             if (flag_interact == true) {
+                // console.log("New Ray Before Interaction \nCurrent: ", JSON.stringify(current_ray, null, 4), "\nNew: ", JSON.stringify(new_ray, null, 4), "\nElement: ", JSON.stringify(interacting_element, null, 4));
                 new_ray.findNewAngle(current_ray.angle_rad, current_ray.quad, interacting_element.angle_rad);
                 new_ray.findQuadrant(); 
-                console.log("New Ray", new_ray)
+                // console.log("New Ray After Interaction ", JSON.stringify(new_ray, null, 4))
             }
             else {
-                console.log("HIHI");
                 current_ray.findBoundary();
                 new_ray.x = current_ray.x_boundary;
                 new_ray.y = current_ray.y_boundary;
                 flag_canvas_interract = true;
-                console.log("new ray", new_ray);
+                // console.log("new ray", new_ray);
             }
             c.beginPath();
             c.lineWidth = 1;
             c.moveTo(current_ray.x, current_ray.y);
             c.lineTo(new_ray.x, new_ray.y);
-            c.strokeStyle = "white";
+            // console.log(rays[i].color);
+            c.strokeStyle = rays[i].color;
             c.stroke();
 
             current_ray.x = new_ray.x;
             current_ray.y = new_ray.y;
             current_ray.angle_deg = new_ray.angle_deg;
+            current_ray.closest_dist = 4000;
             current_ray.findAngRad();
             current_ray.findSlope();
             current_ray.checkVertHorz();
