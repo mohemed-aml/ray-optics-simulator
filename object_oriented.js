@@ -294,7 +294,7 @@ class Ray {
 
 // [x1-cord, y1-cord, x2-cord, y2-cord] ["reflective", 1050, 100, 1050, 400]
 // var temp_mir = [["reflective", 700, 350, 700, 450], ["reflective", 400, 150, 600, 150], ["reflective", 275, 275, 350, 350]];
-var temp_mir = [["reflective", 1050, 550, 1050, 350], ["reflective", 950, 250, 750, 250], ["reflective", 650, 350, 650, 550], ["reflective", 750, 650, 950, 650]]
+var temp_mir = [["reflective", 650, 550, 650, 350], ["reflective", 550, 250, 350, 250], ["reflective", 250, 350, 250, 550], ["reflective", 350, 650, 550, 650]]
 var elements = []; // List of Objects
 for(var i = 0; i<temp_mir.length; i++) {
     if(temp_mir[i][0] == "reflective") {
@@ -304,7 +304,7 @@ for(var i = 0; i<temp_mir.length; i++) {
 
 // [x-cord, y-cord, angle in degrees, quadrant] // [750, 0, 330, 0]
 // var temp_ray = [[600, 500, 45, 0]];
-var temp_ray = [[800, 300, 45, "red"], [900, 300, 135, "blue"]];
+var temp_ray = [[400, 300, 45, "red"], [500, 300, 135, "blue"]];
 var rays = [];
 for(var i = 0; i < temp_ray.length; i++) {
   rays[i] = new Ray(temp_ray[i][0], temp_ray[i][1], temp_ray[i][2], temp_ray[i][3]);
