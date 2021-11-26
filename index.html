@@ -13,21 +13,16 @@
 
 <body>
     <div class="toolbar" id="toolbar">
-        <button type="button" class="btn btn-info" id="addLightRayButton"> Light Ray </button>
-        <button type="button" class="btn btn-info" id="addMirrorButton"> Mirror </button>
-        <button type="reset" class="btn btn-info" id="Button"> Reset </button>
-        <form id="mirfrm">
-            <label for="fname">Position:</label>
-            <input type="text" id="texts" name="x-cord">
-            <input type="text" id="y-cord" name="y-cord">
-            <label for="lname">Angle:</label>
-            <input type="text" id="texts" name="mir-ang">
-            <label for="lname">Length:</label>
-            <input type="text" id="texts" name="mir-len">
-            <input type="submit" value="Submit" class="btn btn-info" onclick="myFunction()">
-        </form>
+        <button type="button" class="btn btn-info" id="addLightRay"> Light Ray </button>
+        <button type="button" class="btn btn-info" id="addLightBeam"> Light Beam </button>
+        <button type="button" class="btn btn-info" id="addRadialSource"> Radial Source </button>
+        <button type="button" class="btn btn-info" id="addFlatMirror"> Flat Mirror </button>
+        <button type="button" class="btn btn-info" id="addCurvedMirror"> Curved Mirror </button>
+        <button type="button" class="btn btn-info" id="addFreeBody"> Free Body </button>
+        <button type="button" class="btn btn-info" id="moveObjects"> Move </button>
+        <button type="reset" class="btn btn-info" id="ResetButton"> Reset </button>
     </div>
     <canvas id="simulationArea"></canvas>
-    <script type="text/javascript" src="object_oriented.js"></script>
+    <script type="text/javascript" src="read.js"></script>
 </body>
 </html>

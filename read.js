@@ -236,11 +236,18 @@ class Ray {
     // }
 
     checkVertHorz() {
-        if(this.angle_rad == 0.5*Math.PI || this.angle_rad == 1.5*Math.PI) {
+        if(this.angle_rad == (0.5*Math.PI) || this.angle_rad == (1.5*Math.PI)) {
             this.flag_vert = true;
         }
-        else if(this.angle_rad == 0 || this.angle_rad == Math.PI) {
+        else {
+            this.flag_vert = false;
+        }
+
+        if(this.angle_rad == 0 || this.angle_rad == Math.PI) {
             this.flag_horz = true;
+        }
+        else {
+            this.flag_horz = false;
         }
     }
 
@@ -602,7 +609,7 @@ function drawElements(rays, elements) {
             c.lineWidth = 1;
             c.moveTo(current_ray.x, current_ray.y);
             c.lineTo(new_ray.x, new_ray.y);
-            console.log(rays[i].color);
+            // console.log(rays[i].color);
             c.strokeStyle = rays[i].color;
             c.stroke();
 
@@ -635,19 +642,28 @@ var shape_no;
 var rays = [];
 var ray_no = -1;
 var el_no = 1;
-var move_type = "";
 var custom_shape = [];
 var flag_begin_click = false;
 var flag_end_click = true;
 var current_button = "";
-var move_12;
-var move_pos;
-var flag_move = false;
 
-document.getElementById("addLightRay").addEventListener("click", function() {current_button = "add light ray", flag_end_click = true});
+var move_12 = "";
+var move_type = "";
+var move_pos = null;
+var flag_ray_move = false;
+var flag_el_move = false;
+
+document.getElementById("addLightRay").addEventListener("click", function() {
+    current_button = "add light ray";
+    flag_end_click = true});
 document.getElementById("addFlatMirror").addEventListener("click", function() {current_button = "add flat mir", flag_end_click = true});
 document.getElementById("addFreeBody").addEventListener("click", function() {current_button = "add free body"});
-document.getElementById("moveObjects").addEventListener("click", function() {current_button = "move objects"});
+document.getElementById("moveObjects").addEventListener("click", function() {
+    current_button = "move objects";
+    move_type = "";
+    move_12 = "";
+    move_pos = null;
+});
 document.getElementById("ResetButton").addEventListener("click", function() {current_button = ""});
 
 function getCursorPosition(canvas, event) {
@@ -668,7 +684,7 @@ canvas.addEventListener('click',
         switch(current_button) {
             case "add light ray":
                 if(flag_end_click) {
-                    console.log('Ray Begin mouse click', x_cord, y_cord);
+                    // console.log('Ray Begin mouse click', x_cord, y_cord);
                     rays.push(new Ray(x_cord, y_cord, 0, "yellow"));
                     ray_no += 1;
 
@@ -678,10 +694,10 @@ canvas.addEventListener('click',
                     canvas.addEventListener('mousemove', mouseMove);
                 }
                 else {
-                    console.log('Ray End Mouse click', x_cord, y_cord);
-                    rays[ray_no].angle_rad = findAngle(rays[ray_no].x, rays[ray_no].y, x_cord, y_cord);
+                    // console.log('Ray End Mouse click', x_cord, y_cord);
                     rays[ray_no].dir_x = x_cord;
                     rays[ray_no].dir_y = y_cord;
+                    rays[ray_no].angle_rad = findAngle(rays[ray_no].x, rays[ray_no].y, rays[ray_no].dir_x, rays[ray_no].dir_y);
                     rays[ray_no].findSlope();
                     rays[ray_no].findQuadrant();
                     rays[ray_no].checkVertHorz();
@@ -691,6 +707,7 @@ canvas.addEventListener('click',
                     canvas.removeEventListener("mousemove", mouseMove);
 
                     drawElements(rays, elements);
+                    // console.log("End Click Ray", JSON.stringify(rays, null, 4), ray_no);
 
                     c.fillStyle = "red";
                     c.fillRect(rays[ray_no].x-4, rays[ray_no].y-4, 8, 8);
@@ -700,7 +717,7 @@ canvas.addEventListener('click',
 
             case "add flat mir":
                 if(flag_end_click) {
-                    console.log('Flat Mir Begin mouse click', x_cord, y_cord);
+                    // console.log('Flat Mir Begin mouse click', x_cord, y_cord);
                     elements.push(new flatMirror(x_cord, y_cord, x_cord, y_cord));
                     el_no += 1;
 
@@ -709,7 +726,7 @@ canvas.addEventListener('click',
                     canvas.addEventListener('mousemove', mouseMove);
                 }
                 else {
-                    console.log('Flat Mir End Mouse click', x_cord, y_cord);
+                    // console.log('Flat Mir End Mouse click', x_cord, y_cord);
                     elements[el_no].x2 = x_cord;
                     elements[el_no].y2 = y_cord;
                     elements[el_no].checkVertHorz();
@@ -767,40 +784,37 @@ canvas.addEventListener("mousedown",
         var xy = getCursorPosition(canvas, e);
         var x_cord = xy[0];
         var y_cord = xy[1];
-        console.log("Mouse Down", xy);
+        // console.log("Mouse Down", xy);
         
         switch(current_button) {
             case "move objects":
-                console.log(JSON.stringify(rays, null, 4), JSON.stringify(elements, null, 4));
+                // console.log("Entered Move Objects in Mouse Down", JSON.stringify(rays, null, 4), JSON.stringify(elements, null, 4));
                 for(var i = 0; i < rays.length; i++) {
                     if(Math.abs(x_cord - rays[i].x) <= 5  && Math.abs(y_cord - rays[i].y) <= 5) {
                         rays[i].x = x_cord;
                         rays[i].y = y_cord;
                         move_12 = "1";
-                        move_pos = i;
-                        flag_move = true;
+                        flag_ray_move = true;
                     }
                     else if(Math.abs(x_cord - rays[i].dir_x) <= 5  && Math.abs(y_cord - rays[i].dir_y) <= 5) {
                         rays[i].dir_x = x_cord;
                         rays[i].dir_y = y_cord;
                         move_12 = "2";
+                        flag_ray_move = true;
+                    }
+
+                    if(flag_ray_move) {
                         move_pos = i;
-                        flag_move = true;
-                    }
-                    else {
-                        // console.log("None of the Above");
-                    }
-                    if(flag_move) {
                         move_type = "ray";
+                        
                         rays[i].angle_rad = findAngle(rays[i].x, rays[i].y, rays[i].dir_x, rays[i].dir_y);
                         rays[i].findSlope();
                         rays[i].findQuadrant();
                         rays[i].checkVertHorz();
-                        c.fillStyle = "red";
-                        c.fillRect(rays[i].x-4, rays[i].y-4, 8, 8);
-                        c.fillRect(rays[i].dir_x-4, rays[i].dir_y-4, 8, 8);
-                        // console.log(move_12, move_pos);
+
+                        // console.log("Mouse Down Ray", move_type, move_12, move_pos, JSON.stringify(rays[i], null, 4));
                         canvas.addEventListener('mousemove', mouseMove);
+                        break;
                     }
                 }
                 for(var i = 0; i < elements.length; i++) {
@@ -809,33 +823,33 @@ canvas.addEventListener("mousedown",
                             elements[i].x1 = x_cord;
                             elements[i].y1 = y_cord;
                             move_12 = "1";
-                            move_pos = i;
-                            flag_move = true;
+                            flag_el_move = true;
                         }
                         else if(Math.abs(x_cord - elements[i].x2) <= 5  && Math.abs(y_cord - elements[i].y2) <= 5) {
                             elements[i].x2 = x_cord;
                             elements[i].y2 = y_cord;
                             move_12 = "2";
-                            move_pos = i;
-                            flag_move = true;
+                            flag_el_move = true;
                         }
                         else {
-                            console.log("None of the Above");
+                            // console.log("None of the Above");
                         }
-                        if(flag_move) {
+                        if(flag_el_move) {
+                            move_pos = i;
                             move_type = "element";
+
                             elements[i].checkVertHorz();
                             elements[i].findSlope();
                             elements[i].findAngRad();
 
-                            c.fillStyle = "red";
-                            c.fillRect(elements[i].x1-4, elements[i].y1-4, 8, 8);
-                            c.fillRect(elements[i].x2-4, elements[i].y2-4, 8, 8);
-                            // console.log(move_12, move_pos);
+                            // console.log("Mouse Down Flat Element", move_type, move_12, move_pos, JSON.stringify(elements[i], null, 4));
                             canvas.addEventListener('mousemove', mouseMove);
+                            break;
                         }
                     }
-                    
+                    else if(elements[i].surface == "curved"){
+                        // console.log("Mouse Down curved element");
+                    }
                 }
                 break;
         }
@@ -847,33 +861,39 @@ canvas.addEventListener("mouseup",
         var xy = getCursorPosition(canvas, e);
         var x_cord = xy[0];
         var y_cord = xy[1];
-        console.log("Mouse Up", xy);
+        // console.log("Mouse Up", xy);
         
         switch(current_button) {
             case "move objects":
-                if(flag_move) {
-                    if(move_type == "ray") {
-                        if(move_12 == "1") {
-                            rays[move_pos].x = x_cord;
-                            rays[move_pos].y = y_cord;
-                        }
-                        else if(move_12 == "2") {
-                            rays[move_pos].dir_x = x_cord;
-                            rays[move_pos].dir_y = y_cord;
-                        }
-
-                        rays[move_pos].angle_rad = findAngle(rays[move_pos].x, rays[move_pos].y, rays[move_pos].dir_x, rays[move_pos].dir_y);
-                        rays[move_pos].findSlope();
-                        rays[move_pos].findQuadrant();
-                        rays[move_pos].checkVertHorz();
-                        drawElements(rays, elements);
-                        c.fillStyle = "red";
-                        c.fillRect(rays[move_pos].x-4, rays[move_pos].y-4, 8, 8);
-                        c.fillRect(rays[move_pos].dir_x-4, rays[move_pos].dir_y-4, 8, 8);
-                        canvas.removeEventListener("mousemove", mouseMove);
-                        flag_move = false;
+                if(flag_ray_move) {
+                    if(move_12 == "1") {
+                        rays[move_pos].x = x_cord;
+                        rays[move_pos].y = y_cord;
                     }
-                    else if(move_type == "element") {
+                    else if(move_12 == "2") {
+                        rays[move_pos].dir_x = x_cord;
+                        rays[move_pos].dir_y = y_cord;
+                    }
+                    rays[move_pos].angle_rad = findAngle(rays[move_pos].x, rays[move_pos].y, rays[move_pos].dir_x, rays[move_pos].dir_y);
+                    rays[move_pos].findSlope();
+                    rays[move_pos].findQuadrant();
+                    rays[move_pos].checkVertHorz();
+
+                    canvas.removeEventListener("mousemove", mouseMove);
+                    drawElements(rays, elements);
+
+                    c.fillStyle = "red";
+                    c.fillRect(rays[move_pos].x-4, rays[move_pos].y-4, 8, 8);
+                    c.fillRect(rays[move_pos].dir_x-4, rays[move_pos].dir_y-4, 8, 8);
+                    // console.log("Mouse Up Ray", move_type, move_12, move_pos, JSON.stringify(rays[move_pos], null, 4));
+
+                    move_12 = "";
+                    move_type = "";
+                    move_pos = null;
+                    flag_ray_move = false;
+                }
+                else if(flag_el_move) {
+                    if(elements[move_pos].surface == "flat") {
                         if(move_12 == "1") {
                             elements[move_pos].x1 = x_cord;
                             elements[move_pos].y1 = y_cord;
@@ -886,20 +906,19 @@ canvas.addEventListener("mouseup",
                         elements[move_pos].findSlope();
                         elements[move_pos].findAngRad();
                         
-                        // console.log(move_12, move_pos);
-                        canvas.addEventListener('mousemove', mouseMove);
+                        canvas.removeEventListener("mousemove", mouseMove);
                         drawElements(rays, elements);
 
                         c.fillStyle = "red";
                         c.fillRect(elements[move_pos].x1-4, elements[move_pos].y1-4, 8, 8);
                         c.fillRect(elements[move_pos].x2-4, elements[move_pos].y2-4, 8, 8);
-                        canvas.removeEventListener("mousemove", mouseMove);
-
-                        flag_move = false;
+                        // console.log("Mouse Up Ray", move_type, move_12, move_pos, JSON.stringify(rays[move_pos], null, 4));
+                        
+                        move_12 = "";
+                        move_type = "";
+                        move_pos = null;
+                        flag_el_move = false;
                     }
-                }
-                else {
-                    console.log("No Element clicked for mouse up");
                 }
                 break;
             case "add free body":
@@ -931,7 +950,7 @@ function mouseMove(ev) {
             elements[el_no].checkVertHorz();
             elements[el_no].findSlope();
             elements[el_no].findAngRad();
-            console.log(JSON.stringify(rays, null, 4), JSON.stringify(elements, null, 4));
+            // console.log(JSON.stringify(rays, null, 4), JSON.stringify(elements, null, 4));
             drawElements(rays, elements);
 
             c.fillStyle = "red";
@@ -940,7 +959,7 @@ function mouseMove(ev) {
             break;
         case "move objects":
             if(move_type == "ray") {
-                // console.log("Mouse move", mouse_xy);
+                // console.log("Mouse move Ray", mouse_xy, move_12, move_pos, move_type);
                 if(move_12 == "1") {
                     rays[move_pos].x = x_cord;
                     rays[move_pos].y = y_cord;
@@ -950,32 +969,41 @@ function mouseMove(ev) {
                     rays[move_pos].dir_y = y_cord;
                 }
                 rays[move_pos].angle_rad = findAngle(rays[move_pos].x, rays[move_pos].y, rays[move_pos].dir_x, rays[move_pos].dir_y);
-                rays[ray_no].findSlope();
-                rays[ray_no].findQuadrant();
-                rays[ray_no].checkVertHorz();
+                rays[move_pos].findSlope();
+                rays[move_pos].findQuadrant();
+                rays[move_pos].checkVertHorz();
+
+                // console.log("Mouse Move Ray", move_type, move_12, move_pos, JSON.stringify(rays[move_pos], null, 4));
                 drawElements(rays, elements);
+
                 c.fillStyle = "red";
                 c.fillRect(rays[move_pos].x-4, rays[move_pos].y-4, 8, 8);
                 c.fillRect(rays[move_pos].dir_x-4, rays[move_pos].dir_y-4, 8, 8);
             }
             else if(move_type == "element") {
-                if(move_12 == "1") {
-                    elements[move_pos].x1 = x_cord;
-                    elements[move_pos].y1 = y_cord;
-                }
-                else if(move_12 == "2") {
-                    elements[move_pos].x2 = x_cord;
-                    elements[move_pos].y2 = y_cord;
-                }
-                elements[move_pos].checkVertHorz();
-                elements[move_pos].findSlope();
-                elements[move_pos].findAngRad();
+                if(elements[move_pos].surface == "flat") {
+                    if(move_12 == "1") {
+                        elements[move_pos].x1 = x_cord;
+                        elements[move_pos].y1 = y_cord;
+                    }
+                    else if(move_12 == "2") {
+                        elements[move_pos].x2 = x_cord;
+                        elements[move_pos].y2 = y_cord;
+                    }
+                    elements[move_pos].checkVertHorz();
+                    elements[move_pos].findSlope();
+                    elements[move_pos].findAngRad();
 
-                drawElements(rays, elements);
-
-                c.fillStyle = "red";
-                c.fillRect(elements[move_pos].x1-4, elements[move_pos].y1-4, 8, 8);
-                c.fillRect(elements[move_pos].x2-4, elements[move_pos].y2-4, 8, 8);
+                    // console.log("Flat Element Mouse Move");
+                    drawElements(rays, elements);
+    
+                    c.fillStyle = "red";
+                    c.fillRect(elements[move_pos].x1-4, elements[move_pos].y1-4, 8, 8);
+                    c.fillRect(elements[move_pos].x2-4, elements[move_pos].y2-4, 8, 8);
+                }
+                else if(elements[move_pos].surface == "curved") {
+                    // console.log("Mouse Move Curved Element");
+                }
             }
             break;
     }
