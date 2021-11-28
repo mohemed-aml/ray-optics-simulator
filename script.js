@@ -413,7 +413,7 @@ class Ray {
         }
     }
     checkDistance(x, y, new_x, new_y) {
-        if(Math.sqrt( Math.pow((new_x - x), 2) + Math.pow((new_y - y), 2) ) < 0.5) {
+        if(Math.sqrt(Math.pow((new_x - x), 2) + Math.pow((new_y - y), 2)) < 0.5) {
             return false;
         }
         else if(Math.sqrt( Math.pow((new_x - x), 2) + Math.pow((new_y - y), 2) ) < this.closest_dist) {
@@ -522,220 +522,6 @@ function findAngle(x1, y1, x2, y2) {
 
     return angle_temp;
 }
-function drawElements(rays, elements) {
-    let curved_mir_slope;
-    let temp_mid_ang;
-    let coordinates;
-    let interacting_element;
-
-    // console.log("drawElements");
-    c.clearRect(0, 0, canvas.width, canvas.height);
-    // drawing Each Reflective and Refractive Surface
-    for(let i = 0; i < elements.length; i++) {
-        elements[i].draw();
-        elements[i].showPoints();
-    }
-
-    // drawing Each Ray
-    for(let i = 0; i < rays.length; i++) {
-
-        // rays[i].showPoints();
-        let flag_canvas_interact = false;
-        let current_ray = new Ray(rays[i].x, rays[i].y, rays[i].angle_rad);
-        let new_ray = new Ray(rays[i].x, rays[i].y, rays[i].angle_rad);
-        let count = 1;
-        // console.log(JSON.stringify(rays[i], null, 4))
-
-        while(flag_canvas_interact === false && count < 200) {
-
-            let flag_interact = false;
-            interacting_element = null;
-
-            for(let j = 0; j < elements.length; j++) {
-                // console.log("i = ", i, "j = ", j, "\nCurrent: ", JSON.stringify(current_ray, null, 4), "\nNew: ", JSON.stringify(new_ray, null, 4), "\nElement: ", JSON.stringify(elements[j], null, 4));
-                if(elements[j].type === "refractive material") {
-                    for(let k = 0; k < elements[j].element_list.length; k++) {
-                        if(elements[j].element_list[k].surface === "flat") {
-                            // console.log("Flat Element");
-                            if (current_ray.checkRayFlatSurfaceIntersection(elements[j].element_list[k]) === false) {
-                                // console.log("checkRayEqn Failed by current ray", JSON.stringify(current_ray, null, 4), "for element", JSON.stringify(elements[j], null, 4));
-                                continue;
-                            }
-
-                            current_ray.findFlatSurfaceCoordinates(elements[j].element_list[k]);
-                            // console.log("Current Ray Coordinates", JSON.stringify(current_ray, null, 4));
-
-                            if(current_ray.checkCoordinatesDirection(current_ray.new_x, current_ray.new_y) === false) {
-                                // console.log("checkCoordinatesDirection Failed by current ray", current_ray, "for element", elements[j]);
-                                continue;
-                            }
-
-                            if(current_ray.checkDistance(current_ray.x, current_ray.y, current_ray.new_x, current_ray.new_y)) {
-                                new_ray.x = current_ray.new_x;
-                                new_ray.y = current_ray.new_y;
-                                interacting_element = elements[j].element_list[k];
-                                flag_interact = true;
-                            }
-                            else {
-                                // console.log("Check Distance Failed");
-                            }
-                        }
-                        else if(elements[j].element_list[k].surface === "curved") {
-                            // console.log("Curved Element");
-                            current_ray.findABCDE(elements[j].element_list[k].x_center, elements[j].element_list[k].y_center, elements[j].element_list[k].radius);
-
-                            if(current_ray.D <= 0){
-                                // console.log("Failed as Determinant <= zero", current_ray.A, current_ray.B, current_ray.C, current_ray.D);
-                                continue;
-                            }
-
-                            coordinates = current_ray.findCurvedPointsOfIntersection();
-                            // console.log("Current Ray Coordinates", JSON.stringify(coordinates));
-
-                            for(let l = 0; l < 2; l++) {
-                                if(current_ray.checkCoordinatesDirection(coordinates[l][0], coordinates[l][1]) === false) {
-                                    // console.log("checkCoordinatesDirection Failed by Point", coordinates[k][0], coordinates[k][1], "for element", JSON.stringify(elements[j], null, 4));
-                                    current_ray.flag_AB[l] = false;
-                                    continue;
-                                }
-
-                                temp_mid_ang = findAngle(elements[j].element_list[k].x_center, elements[j].element_list[k].y_center, coordinates[l][0], coordinates[l][1]);
-                                temp_mid_ang = (2*Math.PI - temp_mid_ang)
-                                // console.log(temp_mid_ang, elements[j].direction, elements[j].findDirection(elements[j].start_ang, temp_mid_ang, elements[j].end_ang));
-                                if(elements[j].element_list[k].findDirection(elements[j].element_list[k].start_ang, temp_mid_ang, elements[j].element_list[k].end_ang) !== elements[j].element_list[k].direction) {
-                                    // console.log("Coordinates in Curved Mirror surface Failed by Point", coordinates[k][0], coordinates[k][1], "for element", JSON.stringify(elements[j], null, 4));
-                                    current_ray.flag_AB[l] = false;
-                                    continue;
-                                }
-
-                                if(current_ray.checkDistance(current_ray.x, current_ray.y, coordinates[l][0], coordinates[l][1])) {
-                                    new_ray.x = coordinates[l][0];
-                                    new_ray.y = coordinates[l][1];
-                                    interacting_element = elements[j].element_list[k];
-                                    curved_mir_slope = interacting_element.findTangentSlopeAtCoordinate(new_ray.x, new_ray.y);
-
-                                    interacting_element.angle_rad = Math.atan(curved_mir_slope);
-                                    flag_interact = true;
-                                }
-                                else {
-                                    // console.log("Check Distance Failed");
-                                }
-                            }
-                        }
-                    }
-                }
-                else {
-                    if(elements[j].surface === "flat") {
-                        // console.log("Flat Element");
-                        if (current_ray.checkRayFlatSurfaceIntersection(elements[j]) === false) {
-                            // console.log("checkRayEqn Failed by current ray", JSON.stringify(current_ray, null, 4), "for element", JSON.stringify(elements[j], null, 4));
-                            continue;
-                        }
-
-                        current_ray.findFlatSurfaceCoordinates(elements[j]);
-                        // console.log("Current Ray Coordinates", JSON.stringify(current_ray, null, 4));
-
-                        if(current_ray.checkCoordinatesDirection(current_ray.new_x, current_ray.new_y) === false) {
-                            // console.log("checkCoordinatesDirection Failed by current ray", current_ray, "for element", elements[j]);
-                            continue;
-                        }
-
-                        if(current_ray.checkDistance(current_ray.x, current_ray.y, current_ray.new_x, current_ray.new_y)) {
-                            new_ray.x = current_ray.new_x;
-                            new_ray.y = current_ray.new_y;
-                            interacting_element = elements[j];
-                            flag_interact = true;
-                        }
-                        else {
-                            // console.log("Check Distance Failed");
-                        }
-                    }
-                    else if(elements[j].surface === "curved") {
-                        // console.log("Curved Element");
-                        current_ray.findABCDE(elements[j].x_center, elements[j].y_center, elements[j].radius);
-
-                        if(current_ray.D <= 0){
-                            // console.log("Failed as Determinant <= zero", current_ray.A, current_ray.B, current_ray.C, current_ray.D);
-                            continue;
-                        }
-
-                        coordinates = current_ray.findCurvedPointsOfIntersection();
-                        // console.log("Current Ray Coordinates", JSON.stringify(coordinates));
-
-                        for(let k = 0; k < 2; k++) {
-                            if(current_ray.checkCoordinatesDirection(coordinates[k][0], coordinates[k][1]) === false) {
-                                // console.log("checkCoordinatesDirection Failed by Point", coordinates[k][0], coordinates[k][1], "for element", JSON.stringify(elements[j], null, 4));
-                                current_ray.flag_AB[k] = false;
-                                continue;
-                            }
-
-                            temp_mid_ang = findAngle(elements[j].x_center, elements[j].y_center, coordinates[k][0], coordinates[k][1]);
-                            temp_mid_ang = (2*Math.PI - temp_mid_ang)
-                            // console.log(temp_mid_ang, elements[j].direction, elements[j].findDirection(elements[j].start_ang, temp_mid_ang, elements[j].end_ang));
-                            if(elements[j].findDirection(elements[j].start_ang, temp_mid_ang, elements[j].end_ang) !== elements[j].direction) {
-                                // console.log("Coordinates in Curved Mirror surface Failed by Point", coordinates[k][0], coordinates[k][1], "for element", JSON.stringify(elements[j], null, 4));
-                                current_ray.flag_AB[k] = false;
-                                continue;
-                            }
-
-                            if(current_ray.checkDistance(current_ray.x, current_ray.y, coordinates[k][0], coordinates[k][1 ])) {
-                                new_ray.x = coordinates[k][0];
-                                new_ray.y = coordinates[k][1];
-                                interacting_element = elements[j];
-                                curved_mir_slope = interacting_element.findTangentSlopeAtCoordinate(new_ray.x, new_ray.y);
-
-                                interacting_element.angle_rad = Math.atan(curved_mir_slope);
-                                flag_interact = true;
-                            }
-                            else {
-                                // console.log("Check Distance Failed");
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (flag_interact === true) {
-                // console.log("New Ray Before Interaction \nCurrent: ", JSON.stringify(current_ray, null, 4), "\nNew: ", JSON.stringify(new_ray, null, 4), "\nElement: ", JSON.stringify(interacting_element, null, 4));
-                if(interacting_element.type === "reflective") {
-                    new_ray.findReflectAngle(current_ray.angle_rad, current_ray.quad, interacting_element.angle_rad);
-                }
-                else {
-                    let flag_inside = c.isPointInPath(interacting_element.path, (current_ray.new_x + current_ray.x)/2, (current_ray.new_y + current_ray.y)/2 );
-                    console.log(current_ray.new_x, current_ray.new_y);
-                    console.log(current_ray.x, current_ray.y);
-                    console.log(flag_inside, (current_ray.new_x + current_ray.x)/2, (current_ray.new_y + current_ray.y)/2);
-                    new_ray.findRefractAngle(current_ray.angle_rad, current_ray.quad, interacting_element.angle_rad, flag_inside, interacting_element.ref_index);
-                }
-                new_ray.findQuadrant();
-                // console.log("New Ray After Interaction ", JSON.stringify(new_ray, null, 4))
-            }
-            else {
-                current_ray.findBoundaryCoordinates();
-                new_ray.x = current_ray.x_boundary;
-                new_ray.y = current_ray.y_boundary;
-                flag_canvas_interact = true;
-                // console.log("new ray", new_ray);
-            }
-            c.beginPath();
-            c.lineWidth = 1;
-            c.moveTo(current_ray.x, current_ray.y);
-            c.lineTo(new_ray.x, new_ray.y);
-            // console.log(rays[i].color);
-            c.strokeStyle = rays[i].color;
-            c.stroke();
-
-            current_ray.x = new_ray.x;
-            current_ray.y = new_ray.y;
-            current_ray.angle_rad = new_ray.angle_rad;
-            current_ray.closest_dist = 4000;
-            current_ray.findSlope();
-            current_ray.findQuadrant();
-            current_ray.checkVertHorz();
-            count += 1;
-        }
-    }
-}
 function getCursorPosition(canvas, event) {
     // console.log(event);
     const rect = canvas.getBoundingClientRect()
@@ -825,35 +611,226 @@ function mouseMove(ev) {
             break;
     }
 }
+function drawElements(rays, elements) {
+    let curved_mir_slope;
+    let temp_mid_ang;
+    let coordinates;
+    let interacting_element;
+
+    // console.log("drawElements");
+    c.clearRect(0, 0, canvas.width, canvas.height);
+    // drawing Each Reflective and Refractive Surface
+    for(let i = 0; i < elements.length; i++) {
+        elements[i].draw();
+        elements[i].showPoints();
+    }
+
+    // drawing Each Ray
+    for(let i = 0; i < rays.length; i++) {
+        // rays[i].showPoints();
+        let flag_canvas_interact = false;
+        let current_ray = new Ray(rays[i].x, rays[i].y, rays[i].angle_rad);
+        let new_ray = new Ray(rays[i].x, rays[i].y, rays[i].angle_rad);
+        let count = 1;
+        // console.log(JSON.stringify(rays[i], null, 4))
+        while(flag_canvas_interact === false && count < 200) {
+            let flag_interact = false;
+            interacting_element = null;
+            for(let j = 0; j < elements.length; j++) {
+                // console.log("i = ", i, "j = ", j, "\nCurrent: ", JSON.stringify(current_ray, null, 4), "\nNew: ", JSON.stringify(new_ray, null, 4), "\nElement: ", JSON.stringify(elements[j], null, 4));
+                if(elements[j].type === "refractive material") {
+                    for(let k = 0; k < elements[j].element_list.length; k++) {
+                        if(elements[j].element_list[k].surface === "flat") {
+                            // console.log("Flat Element");
+                            if (current_ray.checkRayFlatSurfaceIntersection(elements[j].element_list[k]) === false) {
+                                // console.log("checkRayEqn Failed by current ray", JSON.stringify(current_ray, null, 4), "for element", JSON.stringify(elements[j], null, 4));
+                                continue;
+                            }
+                            current_ray.findFlatSurfaceCoordinates(elements[j].element_list[k]);
+                            console.log("Current Ray Coordinates", JSON.stringify(current_ray, null, 4));
+                            if(current_ray.checkCoordinatesDirection(current_ray.new_x, current_ray.new_y) === false) {
+                                // console.log("checkCoordinatesDirection Failed by current ray", current_ray, "for element", elements[j]);
+                                continue;
+                            }
+                            if(current_ray.checkDistance(current_ray.x, current_ray.y, current_ray.new_x, current_ray.new_y)) {
+                                new_ray.x = current_ray.new_x;
+                                new_ray.y = current_ray.new_y;
+                                interacting_element = elements[j].element_list[k];
+                                flag_interact = true;
+                            }
+                            else {
+                                // console.log("Check Distance Failed");
+                            }
+                        }
+                        else if(elements[j].element_list[k].surface === "curved") {
+                            // console.log("Curved Element");
+                            current_ray.findABCDE(elements[j].element_list[k].x_center, elements[j].element_list[k].y_center, elements[j].element_list[k].radius);
+                            if(current_ray.D <= 0){
+                                // console.log("Failed as Determinant <= zero", current_ray.A, current_ray.B, current_ray.C, current_ray.D);
+                                continue;
+                            }
+                            coordinates = current_ray.findCurvedPointsOfIntersection();
+                            // console.log("Current Ray Coordinates", JSON.stringify(coordinates));
+                            for(let l = 0; l < 2; l++) {
+                                if(current_ray.checkCoordinatesDirection(coordinates[l][0], coordinates[l][1]) === false) {
+                                    // console.log("checkCoordinatesDirection Failed by Point", coordinates[k][0], coordinates[k][1], "for element", JSON.stringify(elements[j], null, 4));
+                                    current_ray.flag_AB[l] = false;
+                                    continue;
+                                }
+                                temp_mid_ang = findAngle(elements[j].element_list[k].x_center, elements[j].element_list[k].y_center, coordinates[l][0], coordinates[l][1]);
+                                temp_mid_ang = (2*Math.PI - temp_mid_ang)
+                                // console.log(temp_mid_ang, elements[j].direction, elements[j].findDirection(elements[j].start_ang, temp_mid_ang, elements[j].end_ang));
+                                if(elements[j].element_list[k].findDirection(elements[j].element_list[k].start_ang, temp_mid_ang, elements[j].element_list[k].end_ang) !== elements[j].element_list[k].direction) {
+                                    // console.log("Coordinates in Curved Mirror surface Failed by Point", coordinates[k][0], coordinates[k][1], "for element", JSON.stringify(elements[j], null, 4));
+                                    current_ray.flag_AB[l] = false;
+                                    continue;
+                                }
+                                if(current_ray.checkDistance(current_ray.x, current_ray.y, coordinates[l][0], coordinates[l][1])) {
+                                    new_ray.x = coordinates[l][0];
+                                    new_ray.y = coordinates[l][1];
+                                    interacting_element = elements[j].element_list[k];
+                                    curved_mir_slope = interacting_element.findTangentSlopeAtCoordinate(new_ray.x, new_ray.y);
+                                    interacting_element.angle_rad = Math.atan(curved_mir_slope);
+                                    flag_interact = true;
+                                }
+                                else {
+                                    // console.log("Check Distance Failed");
+                                }
+                            }
+                        }
+                    }
+                }
+                else {
+                    if(elements[j].surface === "flat") {
+                        // console.log("Flat Element");
+                        if (current_ray.checkRayFlatSurfaceIntersection(elements[j]) === false) {
+                            // console.log("checkRayEqn Failed by current ray", JSON.stringify(current_ray, null, 4), "for element", JSON.stringify(elements[j], null, 4));
+                            continue;
+                        }
+                        current_ray.findFlatSurfaceCoordinates(elements[j]);
+                        // console.log("Current Ray Coordinates", JSON.stringify(current_ray, null, 4));
+                        if(current_ray.checkCoordinatesDirection(current_ray.new_x, current_ray.new_y) === false) {
+                            // console.log("checkCoordinatesDirection Failed by current ray", current_ray, "for element", elements[j]);
+                            continue;
+                        }
+                        if(current_ray.checkDistance(current_ray.x, current_ray.y, current_ray.new_x, current_ray.new_y)) {
+                            new_ray.x = current_ray.new_x;
+                            new_ray.y = current_ray.new_y;
+                            interacting_element = elements[j];
+                            flag_interact = true;
+                        }
+                        else {
+                            // console.log("Check Distance Failed");
+                        }
+                    }
+                    else if(elements[j].surface === "curved") {
+                        // console.log("Curved Element");
+                        current_ray.findABCDE(elements[j].x_center, elements[j].y_center, elements[j].radius);
+                        if(current_ray.D <= 0){
+                            // console.log("Failed as Determinant <= zero", current_ray.A, current_ray.B, current_ray.C, current_ray.D);
+                            continue;
+                        }
+                        coordinates = current_ray.findCurvedPointsOfIntersection();
+                        // console.log("Current Ray Coordinates", JSON.stringify(coordinates));
+                        for(let k = 0; k < 2; k++) {
+                            if(current_ray.checkCoordinatesDirection(coordinates[k][0], coordinates[k][1]) === false) {
+                                // console.log("checkCoordinatesDirection Failed by Point", coordinates[k][0], coordinates[k][1], "for element", JSON.stringify(elements[j], null, 4));
+                                current_ray.flag_AB[k] = false;
+                                continue;
+                            }
+                            temp_mid_ang = findAngle(elements[j].x_center, elements[j].y_center, coordinates[k][0], coordinates[k][1]);
+                            temp_mid_ang = (2*Math.PI - temp_mid_ang)
+                            // console.log(temp_mid_ang, elements[j].direction, elements[j].findDirection(elements[j].start_ang, temp_mid_ang, elements[j].end_ang));
+                            if(elements[j].findDirection(elements[j].start_ang, temp_mid_ang, elements[j].end_ang) !== elements[j].direction) {
+                                // console.log("Coordinates in Curved Mirror surface Failed by Point", coordinates[k][0], coordinates[k][1], "for element", JSON.stringify(elements[j], null, 4));
+                                current_ray.flag_AB[k] = false;
+                                continue;
+                            }
+                            if(current_ray.checkDistance(current_ray.x, current_ray.y, coordinates[k][0], coordinates[k][1 ])) {
+                                new_ray.x = coordinates[k][0];
+                                new_ray.y = coordinates[k][1];
+                                interacting_element = elements[j];
+                                curved_mir_slope = interacting_element.findTangentSlopeAtCoordinate(new_ray.x, new_ray.y);
+                                interacting_element.angle_rad = Math.atan(curved_mir_slope);
+                                flag_interact = true;
+                            }
+                            else {
+                                // console.log("Check Distance Failed");
+                            }
+                        }
+                    }
+                }
+            }
+            if (flag_interact === true) {
+                // console.log("New Ray Before Interaction \nCurrent: ", JSON.stringify(current_ray, null, 4), "\nNew: ", JSON.stringify(new_ray, null, 4), "\nElement: ", JSON.stringify(interacting_element, null, 4));
+                if(interacting_element.type === "reflective") {
+                    new_ray.findReflectAngle(current_ray.angle_rad, current_ray.quad, interacting_element.angle_rad);
+                }
+                else {
+                    let flag_inside = c.isPointInPath(interacting_element.path, (new_ray.x + current_ray.x)/2, (new_ray.y + current_ray.y)/2 );
+                    // console.log("Initial point : ", current_ray.x, current_ray.y, "\n Final Point : ", new_ray.x, new_ray.y);
+                    // console.log("Interacting Element", JSON.stringify(interacting_element, null, 4));
+                    // console.log("Is Ray coming from Inside : ", flag_inside, "Ray midpoint", (new_ray.x + current_ray.x)/2, (new_ray.y + current_ray.y)/2);
+                    new_ray.findRefractAngle(current_ray.angle_rad, current_ray.quad, interacting_element.angle_rad, flag_inside, interacting_element.ref_index);
+                }
+                new_ray.findQuadrant();
+                // console.log("New Ray After Interaction ", JSON.stringify(new_ray, null, 4))
+            }
+            else {
+                current_ray.findBoundaryCoordinates();
+                new_ray.x = current_ray.x_boundary;
+                new_ray.y = current_ray.y_boundary;
+                flag_canvas_interact = true;
+                // console.log("new ray", new_ray);
+            }
+            c.beginPath();
+            c.lineWidth = 1;
+            c.moveTo(current_ray.x, current_ray.y);
+            c.lineTo(new_ray.x, new_ray.y);
+            // console.log(rays[i].color);
+            c.strokeStyle = rays[i].color;
+            c.stroke();
+
+            current_ray.x = new_ray.x;
+            current_ray.y = new_ray.y;
+            current_ray.angle_rad = new_ray.angle_rad;
+            current_ray.closest_dist = 4000;
+            current_ray.findSlope();
+            current_ray.findQuadrant();
+            current_ray.checkVertHorz();
+            count += 1;
+        }
+    }
+}
 
 //["curved_mir", 650, 550, 1050, 550, 850, 350], ["flat_mir", 800, 600, 1200, 600]
-let temp_mir = [[800, 600, 1200, 600], [1200, 600, 1200, 500], [1200, 500, 800, 500], [800, 500, 800, 600]];
-let temp_ray = [[1250, 693, 0, "red"]];
-let temp_sub_elem = [];
+// let temp_mir = [[800, 600, 1200, 600], [1200, 600, 1200, 500], [1200, 500, 800, 500], [800, 500, 800, 600]];
+// let temp_ray = [[1250, 693, 0, "red"]];
+// let temp_sub_elem = [];
+// for(let i = 0; i < temp_mir.length; i++) {
+//     // console.log("Creating Objects of the Elements");
+//     if(temp_mir[i][0] === "flat_mir") {
+//         elements[i] = new flatElement(temp_mir[i][1], temp_mir[i][2], temp_mir[i][3], temp_mir[i][4], "reflective");
+//     }
+//     else if(temp_mir[i][0] === "curved_mir") {
+//         elements[i] = new curvedElement(temp_mir[i][1], temp_mir[i][2], temp_mir[i][3], temp_mir[i][4], temp_mir[i][5], temp_mir[i][6], "reflective");
+//     }
+//     else{
+//         temp_sub_elem.push(new flatElement(temp_mir[i][0], temp_mir[i][1], temp_mir[i][2], temp_mir[i][3]));
+//     }
+// }
+// elements.push(new refractiveBody(temp_sub_elem, 1.5));
+// for(let i = 0; i < temp_ray.length; i++) {
+//     // console.log("Creating Objects of the Elements");
+//     rays.push(new Ray(temp_ray[i][0], temp_ray[i][1], temp_ray[i][2], temp_ray[i][3]));
+//     rays[i].dir_x = 1119;
+//     rays[i].dir_y = 635;
+//     rays[i].angle_rad = findAngle(rays[i].x, rays[i].y, rays[i].dir_x, rays[i].dir_y);
+// }
 let elements = [];
 let rays = [];
-for(let i = 0; i < temp_mir.length; i++) {
-    // console.log("Creating Objects of the Elements");
-    if(temp_mir[i][0] === "flat_mir") {
-        elements[i] = new flatElement(temp_mir[i][1], temp_mir[i][2], temp_mir[i][3], temp_mir[i][4], "reflective");
-    }
-    else if(temp_mir[i][0] === "curved_mir") {
-        elements[i] = new curvedElement(temp_mir[i][1], temp_mir[i][2], temp_mir[i][3], temp_mir[i][4], temp_mir[i][5], temp_mir[i][6], "reflective");
-    }
-    else{
-        temp_sub_elem.push(new flatElement(temp_mir[i][0], temp_mir[i][1], temp_mir[i][2], temp_mir[i][3]));
-    }
-}
-elements.push(new refractiveBody(temp_sub_elem, 1.5));
-for(let i = 0; i < temp_ray.length; i++) {
-    // console.log("Creating Objects of the Elements");
-    rays.push(new Ray(temp_ray[i][0], temp_ray[i][1], temp_ray[i][2], temp_ray[i][3]));
-    rays[i].dir_x = 1119;
-    rays[i].dir_y = 635;
-    rays[i].angle_rad = findAngle(rays[i].x, rays[i].y, rays[i].dir_x, rays[i].dir_y);
-}
 let ray_no = -1;
-let el_no = 0;
+let el_no = -1;
 let custom_shape = [];
 let flag_begin_click = false;
 let flag_end_click = true;
@@ -910,7 +887,6 @@ canvas.addEventListener('click',
                     // console.log('Flat Mir Begin mouse click', x_cord, y_cord);
                     elements.push(new flatElement(x_cord, y_cord, x_cord, y_cord, "reflective"));
                     el_no += 1;
-
                     flag_end_click = false;
                     canvas.addEventListener('mousemove', mouseMove);
                 }
@@ -921,12 +897,9 @@ canvas.addEventListener('click',
                     elements[el_no].checkVertHorz();
                     elements[el_no].findSlope();
                     elements[el_no].findAngRad();
-
                     flag_end_click = true;
                     canvas.removeEventListener("mousemove", mouseMove);
-
                     drawElements(rays, elements);
-
                     c.fillStyle = "red";
                     c.fillRect(elements[el_no].x1-4, elements[el_no].y1-4, 8, 8);
                     c.fillRect(x_cord-4, y_cord-4, 8, 8);
@@ -941,7 +914,7 @@ canvas.addEventListener('click',
                     c.fillStyle = "red";
                     c.fillRect(x_cord-4, y_cord-4, 8, 8);
                 }
-                else if(Math.abs(x_cord - custom_shape[0][0]) <=5  && Math.abs(y_cord - custom_shape[0][1]) <=5) {
+                else if(Math.abs(x_cord - custom_shape[0][0]) <=7  && Math.abs(y_cord - custom_shape[0][1]) <=7) {
                     // console.log('Final Mouse click', x_cord, y_cord);
                     custom_shape.push([custom_shape[0][0], custom_shape[0][1]]);
                     // console.log(custom_shape);
@@ -974,28 +947,25 @@ canvas.addEventListener("mousedown",
             case "move objects":
                 console.log("Entered Move Objects in Mouse Down", JSON.stringify(rays, null, 4), JSON.stringify(elements, null, 4));
                 for(let i = 0; i < rays.length; i++) {
-                    if(Math.abs(x_cord - rays[i].x) <= 5  && Math.abs(y_cord - rays[i].y) <= 5) {
+                    if(Math.abs(x_cord - rays[i].x) <= 7  && Math.abs(y_cord - rays[i].y) <= 7) {
                         rays[i].x = x_cord;
                         rays[i].y = y_cord;
                         move_12 = "1";
                         flag_ray_move = true;
                     }
-                    else if(Math.abs(x_cord - rays[i].dir_x) <= 5  && Math.abs(y_cord - rays[i].dir_y) <= 5) {
+                    else if(Math.abs(x_cord - rays[i].dir_x) <= 7  && Math.abs(y_cord - rays[i].dir_y) <= 7) {
                         rays[i].dir_x = x_cord;
                         rays[i].dir_y = y_cord;
                         move_12 = "2";
                         flag_ray_move = true;
                     }
-
                     if(flag_ray_move) {
                         move_pos = i;
                         move_type = "ray";
-                        
                         rays[i].angle_rad = findAngle(rays[i].x, rays[i].y, rays[i].dir_x, rays[i].dir_y);
                         rays[i].findSlope();
                         rays[i].findQuadrant();
                         rays[i].checkVertHorz();
-
                         // console.log("Mouse Down Ray", move_type, move_12, move_pos, JSON.stringify(rays[i], null, 4));
                         canvas.addEventListener('mousemove', mouseMove);
                         break;
@@ -1003,29 +973,24 @@ canvas.addEventListener("mousedown",
                 }
                 for(let i = 0; i < elements.length; i++) {
                     if(elements[i].surface === "flat") {
-                        if(Math.abs(x_cord - elements[i].x1) <= 5  && Math.abs(y_cord - elements[i].y1) <= 5) {
+                        if(Math.abs(x_cord - elements[i].x1) <= 7  && Math.abs(y_cord - elements[i].y1) <= 7) {
                             elements[i].x1 = x_cord;
                             elements[i].y1 = y_cord;
                             move_12 = "1";
                             flag_el_move = true;
                         }
-                        else if(Math.abs(x_cord - elements[i].x2) <= 5  && Math.abs(y_cord - elements[i].y2) <= 5) {
+                        else if(Math.abs(x_cord - elements[i].x2) <= 7  && Math.abs(y_cord - elements[i].y2) <= 7) {
                             elements[i].x2 = x_cord;
                             elements[i].y2 = y_cord;
                             move_12 = "2";
                             flag_el_move = true;
                         }
-                        else {
-                            // console.log("None of the Above");
-                        }
                         if(flag_el_move) {
                             move_pos = i;
                             move_type = "element";
-
                             elements[i].checkVertHorz();
                             elements[i].findSlope();
                             elements[i].findAngRad();
-
                             // console.log("Mouse Down Flat Element", move_type, move_12, move_pos, JSON.stringify(elements[i], null, 4));
                             canvas.addEventListener('mousemove', mouseMove);
                             break;
@@ -1096,7 +1061,6 @@ canvas.addEventListener("mouseup",
                         c.fillRect(elements[move_pos].x1-4, elements[move_pos].y1-4, 8, 8);
                         c.fillRect(elements[move_pos].x2-4, elements[move_pos].y2-4, 8, 8);
                         // console.log("Mouse Up Ray", move_type, move_12, move_pos, JSON.stringify(rays[move_pos], null, 4));
-                        
                         move_12 = "";
                         move_type = "";
                         move_pos = null;
@@ -1109,5 +1073,5 @@ canvas.addEventListener("mouseup",
         }
     })
 
-console.log(JSON.stringify(rays, null, 4), JSON.stringify(elements, null, 4));
-drawElements(rays, elements)
+// console.log(JSON.stringify(rays, null, 4), JSON.stringify(elements, null, 4));
+// drawElements(rays, elements)
