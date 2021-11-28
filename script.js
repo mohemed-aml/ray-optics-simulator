@@ -6,19 +6,45 @@ canvas.height = window.innerHeight - toolbarHeight - 5.1;
 
 document.getElementById("addLightRay").addEventListener("click", function() {
     current_button = "add light ray";
-    flag_end_click = true});
+    flag_begin_click = true;
+});
+document.getElementById("addLightBeam").addEventListener("click", function() {
+    current_button = "add light beam";
+    flag_begin_click = true;
+});
+document.getElementById("addRadialSource").addEventListener("click", function() {
+    current_button = "add radial source";
+});
 document.getElementById("addFlatMirror").addEventListener("click", function() {
     current_button = "add flat mir";
-    flag_end_click = true});
+    flag_begin_click = true;
+});
+document.getElementById("addCurvedMirror").addEventListener("click", function() {
+    current_button = "add curved mir";
+    flag_begin_click = true;
+    flag_second_click = false;
+});
 document.getElementById("addFreeBody").addEventListener("click", function() {
-    current_button = "add free body";});
+    current_button = "add free body";
+});
 document.getElementById("moveObjects").addEventListener("click", function() {
     current_button = "move objects";
     move_type = "";
     move_12 = "";
-    move_pos = null;});
+    move_pos = null;
+});
+document.getElementById("showAnchorPoints").addEventListener("click", function() {
+    flag_show_points = !flag_show_points;
+    drawElements(rays, elements);
+});
 document.getElementById("ResetButton").addEventListener("click", function() {
-    current_button = ""});
+    // current_button = "";
+    rays = [];
+    elements = [];
+    ray_no = -1;
+    el_no = -1;
+    drawElements(rays, elements);
+});
 
 class refractiveBody {
     constructor(element_list, ref_index) {
@@ -134,7 +160,7 @@ class curvedElement {
         this.findSlopes();
         this.findAngle();
         this.findAngles();
-        this.direction = this.findDirection(this.start_ang, this.mid_ang, this.end_ang);
+        this.checkDirection();
         this.draw();
         // this.checkVertHorz();
 
@@ -176,6 +202,9 @@ class curvedElement {
         this.start_ang = this.findAngle(this.slope2, this.x2, this.y2);
         this.mid_ang = this.findAngle(this.slope3, this.x3, this.y3);
         this.end_ang = this.findAngle(this.slope1, this.x1, this.y1);
+    }
+    checkDirection() {
+        this.direction = this.findDirection(this.start_ang, this.mid_ang, this.end_ang);
     }
     findDirection(start_ang, mid_ang, end_ang) {
         return (mid_ang < start_ang && start_ang < end_ang) || (start_ang < end_ang && end_ang < mid_ang) || (end_ang < mid_ang && mid_ang < start_ang);
@@ -501,6 +530,11 @@ class Ray {
         this.yB = this.y + this.slope*(this.x - this.xB);
         return [[this.xA, this.yA], [this.xB, this.yB]];
     }
+    showPoints() {
+        c.fillStyle = "red";
+        c.fillRect(this.x-4, this.y-4, 8, 8);
+        c.fillRect(this.dir_x-4, this.dir_y-4, 8, 8);
+    }
 }
 
 function findAngle(x1, y1, x2, y2) {
@@ -560,6 +594,30 @@ function mouseMove(ev) {
             c.fillRect(elements[el_no].x1-4, elements[el_no].y1-4, 8, 8);
             c.fillRect(mouse_xy[0]-4, mouse_xy[1]-4, 8, 8);
             break;
+        case "add curved mir":
+            if(flag_second_click) {
+                elements[el_no].x2 = mouse_xy[0];
+                elements[el_no].y2 = mouse_xy[1];
+            }
+            else {
+                elements[el_no].x3 = mouse_xy[0];
+                elements[el_no].y3 = mouse_xy[1];
+            }
+            elements[el_no].findCenter();
+            elements[el_no].findRadius();
+            elements[el_no].findSlopes();
+            elements[el_no].findAngle();
+            elements[el_no].findAngles();
+            elements[el_no].checkDirection();
+
+            // console.log(JSON.stringify(rays, null, 4), JSON.stringify(elements, null, 4));
+            drawElements(rays, elements);
+
+            c.fillStyle = "red";
+            c.fillRect(elements[el_no].x1-4, elements[el_no].y1-4, 8, 8);
+            c.fillRect(elements[el_no].x2-4, elements[el_no].y2-4, 8, 8);
+            c.fillRect(elements[el_no].x3-4, elements[el_no].y3-4, 8, 8);
+            break;
         case "move objects":
             if(move_type === "ray") {
                 // console.log("Mouse move Ray", mouse_xy, move_12, move_pos, move_type);
@@ -597,7 +655,6 @@ function mouseMove(ev) {
                     elements[move_pos].findSlope();
                     elements[move_pos].findAngRad();
 
-                    // console.log("Flat Element Mouse Move");
                     drawElements(rays, elements);
 
                     c.fillStyle = "red";
@@ -605,7 +662,31 @@ function mouseMove(ev) {
                     c.fillRect(elements[move_pos].x2-4, elements[move_pos].y2-4, 8, 8);
                 }
                 else if(elements[move_pos].surface === "curved") {
-                    // console.log("Mouse Move Curved Element");
+                    if(move_12 === "1") {
+                        elements[move_pos].x1 = x_cord;
+                        elements[move_pos].y1 = y_cord;
+                    }
+                    else if(move_12 === "2") {
+                        elements[move_pos].x2 = x_cord;
+                        elements[move_pos].y2 = y_cord;
+                    }
+                    else if(move_12 === "3") {
+                        elements[move_pos].x3 = x_cord;
+                        elements[move_pos].y3 = y_cord;
+                    }
+                    elements[move_pos].findCenter();
+                    elements[move_pos].findRadius();
+                    elements[move_pos].findSlopes();
+                    elements[move_pos].findAngle();
+                    elements[move_pos].findAngles();
+                    elements[move_pos].checkDirection();
+
+                    drawElements(rays, elements);
+
+                    c.fillStyle = "red";
+                    c.fillRect(elements[move_pos].x1-4, elements[move_pos].y1-4, 8, 8);
+                    c.fillRect(elements[move_pos].x2-4, elements[move_pos].y2-4, 8, 8);
+                    c.fillRect(elements[move_pos].x3-4, elements[move_pos].y3-4, 8, 8);
                 }
             }
             break;
@@ -620,11 +701,17 @@ function drawElements(rays, elements) {
     // console.log("drawElements");
     c.clearRect(0, 0, canvas.width, canvas.height);
     // drawing Each Reflective and Refractive Surface
+    if(flag_show_points) {
+        for(let i = 0; i < elements.length; i++) {
+            elements[i].showPoints();
+        }
+        for(let i = 0; i < rays.length; i++) {
+            rays[i].showPoints();
+        }
+    }
     for(let i = 0; i < elements.length; i++) {
         elements[i].draw();
-        elements[i].showPoints();
     }
-
     // drawing Each Ray
     for(let i = 0; i < rays.length; i++) {
         // rays[i].showPoints();
@@ -832,8 +919,9 @@ let rays = [];
 let ray_no = -1;
 let el_no = -1;
 let custom_shape = [];
-let flag_begin_click = false;
-let flag_end_click = true;
+let flag_show_points = true;
+let flag_begin_click = true;
+let flag_second_click = false;
 let current_button = "";
 let move_12 = "";
 let move_type = "";
@@ -850,14 +938,11 @@ canvas.addEventListener('click',
 
         switch(current_button) {
             case "add light ray":
-                if(flag_end_click) {
+                if(flag_begin_click) {
                     console.log('Ray Begin mouse click', x_cord, y_cord);
                     rays.push(new Ray(x_cord, y_cord, 0, "yellow"));
                     ray_no += 1;
-
-                    flag_begin_click = true;
-                    flag_end_click = false;
-
+                    flag_begin_click = false;
                     canvas.addEventListener('mousemove', mouseMove);
                 }
                 else {
@@ -868,9 +953,7 @@ canvas.addEventListener('click',
                     rays[ray_no].findSlope();
                     rays[ray_no].findQuadrant();
                     rays[ray_no].checkVertHorz();
-
-                    flag_begin_click = false;
-                    flag_end_click = true;
+                    flag_begin_click = true;
                     canvas.removeEventListener("mousemove", mouseMove);
 
                     drawElements(rays, elements);
@@ -881,13 +964,47 @@ canvas.addEventListener('click',
                     c.fillRect(x_cord-4, y_cord-4, 8, 8);
                 }
                 break;
+            // case "add light beam":
+            //     if(flag_begin_click) {
+            //         console.log('Ray Beam Begin mouse click', x_cord, y_cord);
+            //         rays.push(new Ray(x_cord, y_cord, 0, "yellow"));
+            //         ray_no += 1;
+            //         flag_begin_click = false;
+            //         canvas.addEventListener('mousemove', mouseMove);
+            //     }
+            //     else {
+            //         console.log('Ray End Mouse click', x_cord, y_cord);
+            //         rays[ray_no].dir_x = x_cord;
+            //         rays[ray_no].dir_y = y_cord;
+            //         rays[ray_no].angle_rad = findAngle(rays[ray_no].x, rays[ray_no].y, rays[ray_no].dir_x, rays[ray_no].dir_y);
+            //         rays[ray_no].findSlope();
+            //         rays[ray_no].findQuadrant();
+            //         rays[ray_no].checkVertHorz();
+            //         flag_begin_click = true;
+            //         canvas.removeEventListener("mousemove", mouseMove);
+            //
+            //         drawElements(rays, elements);
+            //         console.log("End Click Ray", JSON.stringify(rays, null, 4), ray_no);
+            //
+            //         c.fillStyle = "red";
+            //         c.fillRect(rays[ray_no].x-4, rays[ray_no].y-4, 8, 8);
+            //         c.fillRect(x_cord-4, y_cord-4, 8, 8);
+            //     }
+            //     break;
 
+            // case "add radial source":
+            //     console.log('Ray Beam Begin mouse click', x_cord, y_cord);
+            //     rays.push(new Ray(x_cord, y_cord, 0, "yellow"));
+            //     ray_no += 1;
+            //     flag_begin_click = false;
+            //     canvas.addEventListener('mousemove', mouseMove);
+            //     break;
             case "add flat mir":
-                if(flag_end_click) {
+                if(flag_begin_click) {
                     // console.log('Flat Mir Begin mouse click', x_cord, y_cord);
                     elements.push(new flatElement(x_cord, y_cord, x_cord, y_cord, "reflective"));
                     el_no += 1;
-                    flag_end_click = false;
+                    flag_begin_click = false;
                     canvas.addEventListener('mousemove', mouseMove);
                 }
                 else {
@@ -897,7 +1014,7 @@ canvas.addEventListener('click',
                     elements[el_no].checkVertHorz();
                     elements[el_no].findSlope();
                     elements[el_no].findAngRad();
-                    flag_end_click = true;
+                    flag_begin_click = true;
                     canvas.removeEventListener("mousemove", mouseMove);
                     drawElements(rays, elements);
                     c.fillStyle = "red";
@@ -905,12 +1022,57 @@ canvas.addEventListener('click',
                     c.fillRect(x_cord-4, y_cord-4, 8, 8);
                 }
                 break;
-
+            case "add curved mir":
+                if(flag_begin_click) {
+                    console.log('Curved Mir first mouse click', x_cord, y_cord);
+                    elements.push(new curvedElement(x_cord, y_cord, x_cord, y_cord, x_cord, y_cord, "reflective"));
+                    el_no += 1;
+                    flag_begin_click = false;
+                    flag_second_click = true;
+                    c.fillStyle = "red";
+                    c.fillRect(x_cord-4, y_cord-4, 8, 8);
+                    canvas.addEventListener('mousemove', mouseMove);
+                }
+                else if(flag_second_click) {
+                    console.log('Curved Mir Second Mouse click', x_cord, y_cord);
+                    elements[el_no].x2 = x_cord;
+                    elements[el_no].y2 = y_cord;
+                    elements[el_no].findCenter();
+                    elements[el_no].findRadius();
+                    elements[el_no].findSlopes();
+                    elements[el_no].findAngle();
+                    elements[el_no].findAngles();
+                    elements[el_no].checkDirection();
+                    flag_second_click = false;
+                    drawElements(rays, elements);
+                    c.fillStyle = "red";
+                    c.fillRect(elements[el_no].x1-4, elements[el_no].y1-4, 8, 8);
+                    c.fillRect(elements[el_no].x2-4, elements[el_no].y2-4, 8, 8);
+                }
+                else {
+                    console.log('Curved Mir Second Mouse click', x_cord, y_cord);
+                    elements[el_no].x3 = x_cord;
+                    elements[el_no].y3 = y_cord;
+                    elements[el_no].findCenter();
+                    elements[el_no].findRadius();
+                    elements[el_no].findSlopes();
+                    elements[el_no].findAngle();
+                    elements[el_no].findAngles();
+                    elements[el_no].checkDirection();
+                    flag_begin_click = true;
+                    canvas.removeEventListener("mousemove", mouseMove);
+                    drawElements(rays, elements);
+                    c.fillStyle = "red";
+                    c.fillRect(elements[el_no].x1-4, elements[el_no].y1-4, 8, 8);
+                    c.fillRect(elements[el_no].x2-4, elements[el_no].y2-4, 8, 8);
+                    c.fillRect(elements[el_no].x3-4, elements[el_no].y3-4, 8, 8);
+                }
+                break;
             case "add free body":
-                if(flag_end_click) {
+                if(flag_begin_click) {
                     // console.log('first mouse click', x_cord, y_cord);
                     custom_shape.push(xy);
-                    flag_end_click = false; 
+                    flag_begin_click = false;
                     c.fillStyle = "red";
                     c.fillRect(x_cord-4, y_cord-4, 8, 8);
                 }
@@ -923,9 +1085,10 @@ canvas.addEventListener('click',
                         refract_arr.push(new flatElement(custom_shape[i][0], custom_shape[i][1], custom_shape[i+1][0], custom_shape[i+1][1], "refractive"));
                     }
                     elements.push(new refractiveBody(refract_arr, refract_index));
+                    drawElements(rays, elements);
                     custom_shape = [];
                     refract_arr = [];
-                    flag_end_click = true;
+                    flag_begin_click = true;
                 }
                 else {
                     console.log('Mouse click', x_cord, y_cord);
@@ -997,7 +1160,37 @@ canvas.addEventListener("mousedown",
                         }
                     }
                     else if(elements[i].surface === "curved"){
-                        // console.log("Mouse Down curved element");
+                        if(Math.abs(x_cord - elements[i].x1) <= 7  && Math.abs(y_cord - elements[i].y1) <= 7) {
+                            elements[i].x1 = x_cord;
+                            elements[i].y1 = y_cord;
+                            move_12 = "1";
+                            flag_el_move = true;
+                        }
+                        else if(Math.abs(x_cord - elements[i].x2) <= 7  && Math.abs(y_cord - elements[i].y2) <= 7) {
+                            elements[i].x2 = x_cord;
+                            elements[i].y2 = y_cord;
+                            move_12 = "2";
+                            flag_el_move = true;
+                        }
+                        else if(Math.abs(x_cord - elements[i].x3) <= 7  && Math.abs(y_cord - elements[i].y3) <= 7) {
+                            elements[i].x3 = x_cord;
+                            elements[i].y3 = y_cord;
+                            move_12 = "3";
+                            flag_el_move = true;
+                        }
+                        if(flag_el_move) {
+                            move_pos = i;
+                            move_type = "element";
+                            elements[i].findCenter();
+                            elements[i].findRadius();
+                            elements[i].findSlopes();
+                            elements[i].findAngle();
+                            elements[i].findAngles();
+                            elements[i].checkDirection();
+                            // console.log("Mouse Down Flat Element", move_type, move_12, move_pos, JSON.stringify(elements[i], null, 4));
+                            canvas.addEventListener('mousemove', mouseMove);
+                            break;
+                        }
                     }
                 }
                 break;
@@ -1061,6 +1254,39 @@ canvas.addEventListener("mouseup",
                         c.fillRect(elements[move_pos].x1-4, elements[move_pos].y1-4, 8, 8);
                         c.fillRect(elements[move_pos].x2-4, elements[move_pos].y2-4, 8, 8);
                         // console.log("Mouse Up Ray", move_type, move_12, move_pos, JSON.stringify(rays[move_pos], null, 4));
+                        move_12 = "";
+                        move_type = "";
+                        move_pos = null;
+                        flag_el_move = false;
+                    }
+                    else if(elements[move_pos].surface === "curved") {
+                        if(move_12 === "1") {
+                            elements[move_pos].x1 = x_cord;
+                            elements[move_pos].y1 = y_cord;
+                        }
+                        else if(move_12 === "2") {
+                            elements[move_pos].x2 = x_cord;
+                            elements[move_pos].y2 = y_cord;
+                        }
+                        else if(move_12 === "3") {
+                            elements[move_pos].x3 = x_cord;
+                            elements[move_pos].y3 = y_cord;
+                        }
+                        elements[move_pos].findCenter();
+                        elements[move_pos].findRadius();
+                        elements[move_pos].findSlopes();
+                        elements[move_pos].findAngle();
+                        elements[move_pos].findAngles();
+                        elements[move_pos].checkDirection();
+
+                        canvas.removeEventListener("mousemove", mouseMove);
+                        drawElements(rays, elements);
+
+                        c.fillStyle = "red";
+                        c.fillRect(elements[move_pos].x1-4, elements[move_pos].y1-4, 8, 8);
+                        c.fillRect(elements[move_pos].x2-4, elements[move_pos].y2-4, 8, 8);
+                        c.fillRect(elements[move_pos].x3-4, elements[move_pos].y3-4, 8, 8);
+
                         move_12 = "";
                         move_type = "";
                         move_pos = null;
