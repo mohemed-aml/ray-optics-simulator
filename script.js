@@ -460,16 +460,32 @@ class Ray {
         }
         cpy_dir = Math.abs(cpy_dif) / cpy_dif;
 
+        let ref_dif = Math.abs(mir_angle - ray_angle) % Math.PI;
+        let incident_ang = Math.abs(0.5*Math.PI - ref_dif);
+        let refracted_ang = Math.abs(Math.asin(Math.cos(ref_dif) / ref_ind));
+        let critical_ang = Math.asin(1/ref_ind);
+        let ref_change = incident_ang - refracted_ang;
+        console.log("Incident Angle :", incident_ang);
+        console.log("Refracted Angle :", refracted_ang);
+        console.log("Angle Deviation :", ref_change);
+        console.log("Sign of angle change :", cpy_dir);
+
         if(flag_inside) {
-            this.angle_rad = ray_angle - cpy_dir*(Math.PI*0.083333333);
+            if(incident_ang > critical_ang) {
+                this.angle_rad = ray_angle + 2*(mir_angle - ray_angle);
+            }
+            else {
+                this.angle_rad = ray_angle - cpy_dir*(ref_change);
+            }
         }
         else {
-            this.angle_rad = ray_angle + cpy_dir*(Math.PI*0.083333333);
+            this.angle_rad = ray_angle + cpy_dir*(ref_change);
         }
         this.angle_rad %= (2*Math.PI);
         if(this.angle_rad < 0) {
             this.angle_rad += 2*Math.PI;
         }
+        this.angle_rad %= (2*Math.PI);
     }
     findABCDE(a, b, r) {
         this.A = 1 + this.slope**2;
@@ -686,6 +702,8 @@ function drawElements(rays, elements) {
                 }
                 else {
                     let flag_inside = c.isPointInPath(interacting_element.path, (current_ray.new_x + current_ray.x)/2, (current_ray.new_y + current_ray.y)/2 );
+                    console.log(current_ray.new_x, current_ray.new_y);
+                    console.log(current_ray.x, current_ray.y);
                     console.log(flag_inside, (current_ray.new_x + current_ray.x)/2, (current_ray.new_y + current_ray.y)/2);
                     new_ray.findRefractAngle(current_ray.angle_rad, current_ray.quad, interacting_element.angle_rad, flag_inside, interacting_element.ref_index);
                 }
@@ -810,7 +828,7 @@ function mouseMove(ev) {
 
 //["curved_mir", 650, 550, 1050, 550, 850, 350], ["flat_mir", 800, 600, 1200, 600]
 let temp_mir = [[800, 600, 1200, 600], [1200, 600, 1200, 500], [1200, 500, 800, 500], [800, 500, 800, 600]];
-let temp_ray = [[700, 800, 0.7853981633, "red"]];
+let temp_ray = [[1250, 693, 0, "red"]];
 let temp_sub_elem = [];
 let elements = [];
 let rays = [];
@@ -830,11 +848,12 @@ elements.push(new refractiveBody(temp_sub_elem, 1.5));
 for(let i = 0; i < temp_ray.length; i++) {
     // console.log("Creating Objects of the Elements");
     rays.push(new Ray(temp_ray[i][0], temp_ray[i][1], temp_ray[i][2], temp_ray[i][3]));
+    rays[i].dir_x = 1119;
+    rays[i].dir_y = 635;
+    rays[i].angle_rad = findAngle(rays[i].x, rays[i].y, rays[i].dir_x, rays[i].dir_y);
 }
-rays[0].dir_x = 800;
-rays[0].dir_y = 700;
 let ray_no = -1;
-let el_no = 1;
+let el_no = 0;
 let custom_shape = [];
 let flag_begin_click = false;
 let flag_end_click = true;
@@ -1090,5 +1109,5 @@ canvas.addEventListener("mouseup",
         }
     })
 
-// console.log(JSON.stringify(rays, null, 4), JSON.stringify(elements, null, 4));
+console.log(JSON.stringify(rays, null, 4), JSON.stringify(elements, null, 4));
 drawElements(rays, elements)
